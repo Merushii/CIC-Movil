@@ -1,0 +1,25 @@
+*Para hacer que funcione tienen que subir la base de datos que está en la carpeta Base de datos a XAMPP, la base de datos se llama cicassistance, NO LE VAYAN A MOVER EL NOMBRE.
+
+
+*En la carpeta API está el archivo para que jale la API, en la carpeta env está el .env que permite que la API se conecte a la base de datos, NO LE VAYAN A MOVER, DEJENLO ASÍ COMO 
+ESTÁ, POR ESO ES IMPORTANTE QUE NO LE PONGAN OTRO NOMBRE A LA BASE DE DATOS EN XAMPP.
+En caso de que la carpeta env se haya borrado al momento de subirlo a git, en la misma carpeta API hay un zip llamado env, solo se descomprime y está la carpeta env con su archivo .env dentro.
+
+
+*Para ejecutar la API, solo abran su visual y en la terminal, le dan npm install para que instale todas las dependencias, luego lo corren con node app.js, se les abrirá en el http://localhost:3004
+
+
+*Ahora en Android Studio, abran la carpeta fluttercic, la app ya va a estar configurada para tener la conexión a la API, así que NO TIENEN QUE MOVERLE NADA, se va a trabajar con puro emulador.
+
+
+*Los usuarios de prueba son:
+CesarMovil - 12345678
+ScarMovil - 12345678
+
+
+*La aplicación ya funciona pero, si se puede implementar estas cosas estaria muy bien:
+
+-servicio_tecnico.dart: En el formulario de solicitud de servicio tenico, establecer una condicional de que si se selecciona CIC, Coordinación, edificio "J" y edificio "K" el nivel se bloquee en "1"
+de modo que solo en esos edificios sea elegible nivel "1" o se bloquee en 1.
+
+-historial.dart: En la vista de historial, implementar filtros para visualizar solamente reportes de "Hoy" "Esta Semana" "Este mes" "Todos"
