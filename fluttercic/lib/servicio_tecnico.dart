@@ -15,7 +15,6 @@ class Solicitud extends StatefulWidget {
 class _SolicitudState extends State<Solicitud> {
   final APIService apiService = APIService(baseUrl: 'http://10.0.2.2:3004'); //Esta es la IP del emulador y el puerto de la API
 
-
   static final Map<String, int> edificioNivelToId = {
     'A 1': 1,
     'A 2': 2,
@@ -56,10 +55,13 @@ class _SolicitudState extends State<Solicitud> {
   final List<String> edificios = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'Coordinación', 'CIC', 'I+D+I'];
 
   String edificioSeleccionado = 'A'; // Valor predeterminado para el edificio seleccionado
+  List<String> niveles = ['1', '2', '3'];
 
-  final List<String> niveles = ['1', '2', '3'];
+  String nivelSeleccionado = '1'; // Valor predeterminado para el nivel seleccionado
 
-  String nivelSeleccionado = '1'; // Valor predeterminado para el edificio seleccionado
+  bool isNivelBloqueado() {
+    return ['CIC', 'Coordinación', 'J', 'K'].contains(edificioSeleccionado);
+  }
 
   static int obtenerIdEdificio(String edificioSeleccionadoParam, String nivelSeleccionado) {
     final key = '$edificioSeleccionadoParam $nivelSeleccionado';
@@ -76,7 +78,6 @@ class _SolicitudState extends State<Solicitud> {
   TextEditingController descripcionProblemaController = TextEditingController();
 
   String ubicacionFisica = '';
- // String edificioYNivel = '';
   String telefono = '';
   List<String> equiposSeleccionados = [];
   String otroEspecifique = '';
@@ -97,55 +98,55 @@ class _SolicitudState extends State<Solicitud> {
               },
             ),
             TextButton(
-              child: Text("Aceptar"),
-              onPressed: () async {
-                if (_validarDatos()) {
-                  SolicitudModel solicitud = SolicitudModel(
-                    description: descripcionProblema,
-                    type: equiposSeleccionados.join(', '), // Combina equipos seleccionados
-                    telefono: telefono,
-                    idEdificio: obtenerIdEdificio(edificioSeleccionado, nivelSeleccionado), // Aquí se llama al método obtenerIdEdificio,
-                    ubicacionFisica: ubicacionFisica,
-                    equipo: equiposSeleccionados.join(', '),
-                  );
+  child: Text("Aceptar"),
+  onPressed: () async {
+    if (_validarDatos()) {
+      // Ya se maneja en _seleccionarEquipos
 
-                  try {
-                    final sessionToken = await _getSessionToken();
-                    print('Token de sesión: $sessionToken');
-                    await apiService.createSolicitud(solicitud);
+      SolicitudModel solicitud = SolicitudModel(
+        description: descripcionProblema,
+        type: equiposSeleccionados.join(', '), // Combina equipos seleccionados
+        telefono: telefono,
+        idEdificio: obtenerIdEdificio(edificioSeleccionado, nivelSeleccionado), // Aquí se llama al método obtenerIdEdificio,
+        ubicacionFisica: ubicacionFisica,
+        equipo: equiposSeleccionados.join(', '),
+      );
 
-                    // Limpiar los campos
-                    setState(() {
-                      telefonoController.clear();
-                      ubicacionFisicaController.clear();
-                      otroEspecifiqueController.clear();
-                      descripcionProblemaController.clear();
-                      ubicacionFisica = '';
-                      //edificioYNivel = '';
-                      telefono = '';
-                      equiposSeleccionados = [];
-                      otroEspecifique = '';
-                      descripcionProblema = '';
-                    });
+      try {
+        final sessionToken = await _getSessionToken();
+        print('Token de sesión: $sessionToken');
+        await apiService.createSolicitud(solicitud);
 
-                    Navigator.of(context).pop(); // Cerrar la ventana de confirmación
-                    _mostrarSolicitudEnviada(context); // Mostrar ventana de solicitud enviada
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error al enviar la solicitud: $e'),
-                      ),
-                    );
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Por favor, completa todos los campos obligatorios.'),
-                    ),
-                  );
-                }
-              },
-            ),
+        // Limpiar los campos
+        setState(() {
+            telefonoController.clear();
+            ubicacionFisicaController.clear();
+            otroEspecifiqueController.clear();
+            descripcionProblemaController.clear();
+            ubicacionFisica = '';
+            telefono = '';
+            equiposSeleccionados = [];
+            otroEspecifique = '';
+            descripcionProblema = '';
+          });
+        Navigator.of(context).pop(); // Cerrar la ventana de confirmación
+        _mostrarSolicitudEnviada(context); // Mostrar ventana de solicitud enviada
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al enviar la solicitud: $e'),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Por favor, completa todos los campos obligatorios.'),
+        ),
+      );
+    }
+  },
+),
           ],
         );
       },
@@ -185,18 +186,40 @@ class _SolicitudState extends State<Solicitud> {
 
   bool _validarDatos() {
     return telefono.isNotEmpty &&
-        //edificioYNivel.isNotEmpty &&
         ubicacionFisica.isNotEmpty &&
         descripcionProblema.isNotEmpty;
   }
 
+  // Método para seleccionar equipos (simulado)
+void _seleccionarEquipos() async {
+  final List<String> equipos = ['Monitor', 'PC', 'Gabinete', 'Nodo', 'UPS', 'Teclado', 'Laptop', 'Mouse', 'Proyector', 'Teléfono', 'Acces Point', 'Impresora', 'Otro'];
+  final Map<String, dynamic> resultado = await showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return MultiSelectDialog(equipos: equipos, seleccionados: equiposSeleccionados, otroEspecifiqueController: otroEspecifiqueController);
+    },
+  ) ?? {'seleccionados': [], 'otroEspecifique': ''};
+
+  setState(() {
+    equiposSeleccionados = List<String>.from(resultado['seleccionados']);
+    otroEspecifique = resultado['otroEspecifique'];
+
+    // Remover "Otro" si se especificó un valor en otroEspecifique
+    if (equiposSeleccionados.contains('Otro') && otroEspecifique.isNotEmpty) {
+      equiposSeleccionados.remove('Otro');
+    }
+    // Agregar otroEspecifique solo si no está vacío y no está ya en la lista
+    if (otroEspecifique.isNotEmpty && !equiposSeleccionados.contains(otroEspecifique)) {
+      equiposSeleccionados.add(otroEspecifique);
+    }
+  });
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         toolbarHeight: 56,
-        //automaticallyImplyLeading: false,
         iconTheme: IconThemeData(color: Colors.white),
         title: Row(
           children: [
@@ -269,49 +292,11 @@ class _SolicitudState extends State<Solicitud> {
                           ),
                         ),
                         SizedBox(height: 33),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Edificio: ', // Cambia el texto a "Edificio: "
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          TextSpan(
-                            text: '*', // Marca como campo obligatorio
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    DropdownButton<String>(
-                      value: edificioSeleccionado,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          edificioSeleccionado = newValue!;
-                        });
-                      },
-                      items: edificios.map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(height: 33),
                         RichText(
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: 'Nivel: ', // Cambia el texto a "Nivel: "
+                                text: 'Edificio: ',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -319,7 +304,7 @@ class _SolicitudState extends State<Solicitud> {
                                 ),
                               ),
                               TextSpan(
-                                text: '*', // Marca como campo obligatorio
+                                text: '*',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -330,26 +315,75 @@ class _SolicitudState extends State<Solicitud> {
                           ),
                         ),
                         SizedBox(height: 8),
-                        DropdownButton<String>(
-                          value: nivelSeleccionado,
-                          onChanged: (String? newValue) {
+                        DropdownButtonFormField<String>(
+                          value: edificioSeleccionado,
+                          onChanged: (value) {
                             setState(() {
-                              nivelSeleccionado = newValue!;
+                              edificioSeleccionado = value!;
+                              if (isNivelBloqueado()) {
+                                nivelSeleccionado = '1';
+                              }
                             });
                           },
-                          items: niveles.map<DropdownMenuItem<String>>((String value) {
+                          items: edificios.map((String edificio) {
                             return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
+                              value: edificio,
+                              child: Text(edificio),
                             );
                           }).toList(),
+                          decoration: InputDecoration(
+                            hintText: 'Selecciona el edificio',
+                          ),
                         ),
                         SizedBox(height: 33),
                         RichText(
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: 'Ubicación Física: ',
+                                text: 'Nivel: ',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '*',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: nivelSeleccionado,
+                          onChanged: isNivelBloqueado()
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    nivelSeleccionado = value!;
+                                  });
+                                },
+                          items: niveles.map((String nivel) {
+                            return DropdownMenuItem<String>(
+                              value: nivel,
+                              child: Text(nivel),
+                            );
+                          }).toList(),
+                          decoration: InputDecoration(
+                            hintText: 'Selecciona el nivel',
+                          ),
+                        ),
+                        SizedBox(height: 33),
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Ubicación física: ',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -376,267 +410,28 @@ class _SolicitudState extends State<Solicitud> {
                             });
                           },
                           decoration: InputDecoration(
-                            hintText: 'Escribe tu área',
+                            hintText: 'Escribe tu ubicación física',
                           ),
                         ),
                         SizedBox(height: 33),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'Equipos: ',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              TextSpan(
-                                text: '*',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.red,
-                                ),
-                              ),
-                            ],
+                        Text(
+                          'Equipo: ',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CheckboxListTile(
-                                    title: Text('Monitor'),
-                                    value: equiposSeleccionados.contains('Monitor'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Monitor');
-                                        } else {
-                                          equiposSeleccionados.remove('Monitor');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: Text('Nodo'),
-                                    value: equiposSeleccionados.contains('Nodo'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Nodo');
-                                        } else {
-                                          equiposSeleccionados.remove('Nodo');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: Text('UPS'),
-                                    value: equiposSeleccionados.contains('UPS'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('UPS');
-                                        } else {
-                                          equiposSeleccionados.remove('UPS');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: Text('Laptop'),
-                                    value: equiposSeleccionados.contains('Laptop'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Laptop');
-                                        } else {
-                                          equiposSeleccionados.remove('Laptop');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: Text('Proyector'),
-                                    value: equiposSeleccionados.contains('Proyector'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Proyector');
-                                        } else {
-                                          equiposSeleccionados.remove('Proyector');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: Text('Access Point'),
-                                    value: equiposSeleccionados.contains('Access Point'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Access Point');
-                                        } else {
-                                          equiposSeleccionados.remove('Access Point');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CheckboxListTile(
-                                    title: Text('PC'),
-                                    value: equiposSeleccionados.contains('PC'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('PC');
-                                        } else {
-                                          equiposSeleccionados.remove('PC');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: Text('Gabinete'),
-                                    value: equiposSeleccionados.contains('Gabinete'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Gabinete');
-                                        } else {
-                                          equiposSeleccionados.remove('Gabinete');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: Text('Teclado'),
-                                    value: equiposSeleccionados.contains('Teclado'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Teclado');
-                                        } else {
-                                          equiposSeleccionados.remove('Teclado');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: Text('Mouse'),
-                                    value: equiposSeleccionados.contains('Mouse'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Mouse');
-                                        } else {
-                                          equiposSeleccionados.remove('Mouse');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: Text('Teléfono'),
-                                    value: equiposSeleccionados.contains('Teléfono'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Teléfono');
-                                        } else {
-                                          equiposSeleccionados.remove('Teléfono');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: Text('Impresora'),
-                                    value: equiposSeleccionados.contains('Impresora'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Impresora');
-                                        } else {
-                                          equiposSeleccionados.remove('Impresora');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        ElevatedButton(
+                          onPressed: _seleccionarEquipos,
+                          child: Text('Seleccionar equipos'),
                         ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CheckboxListTile(
-                                    title: Text('Otro'),
-                                    value: equiposSeleccionados.contains('Otro'),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value != null && value) {
-                                          equiposSeleccionados.add('Otro');
-                                        } else {
-                                          equiposSeleccionados.remove('Otro');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                ],
-                              ),
-                            ),
-                          ],
+                        SizedBox(height: 8),
+                        Text(
+                          'Equipos seleccionados: ${equiposSeleccionados.join(', ')}',
+                          style: TextStyle(fontSize: 16),
                         ),
-                        SizedBox(height: 16),
-                        Visibility(
-                          visible: equiposSeleccionados.contains('Otro'),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Especifique:',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              TextField(
-                                controller: otroEspecifiqueController,
-                                onChanged: (value) {
-                                  setState(() {
-                                    otroEspecifique = value;
-                                  });
-                                },
-                                decoration: InputDecoration(
-                                  hintText: 'Especifique',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 33),
                         RichText(
                           text: TextSpan(
                             children: [
@@ -659,6 +454,7 @@ class _SolicitudState extends State<Solicitud> {
                             ],
                           ),
                         ),
+                        SizedBox(height: 8),
                         TextField(
                           controller: descripcionProblemaController,
                           onChanged: (value) {
@@ -666,33 +462,32 @@ class _SolicitudState extends State<Solicitud> {
                               descripcionProblema = value;
                             });
                           },
+                          maxLines: 5,
                           decoration: InputDecoration(
-                            hintText: 'Escribe todos los detalles de tu problema',
+                            hintText: 'Describe el problema',
+                            border: OutlineInputBorder(),
                           ),
                         ),
-                        SizedBox(height: 40),
+                        SizedBox(height: 33),
                         Center(
-                          child: Container(
-                            width: 150,
-                            height: 50,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                _mostrarVentanaConfirmacion(context);
-                              },
-                              child: Text(
-                                'Enviar',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              _mostrarVentanaConfirmacion(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.white, backgroundColor: Color(0xFF022049),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFFFBA834),
+                              textStyle: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
+                            child: Text('Enviar Solicitud'),
                           ),
                         ),
-                        SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -702,6 +497,88 @@ class _SolicitudState extends State<Solicitud> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class MultiSelectDialog extends StatefulWidget {
+  final List<String> equipos;
+  final List<String> seleccionados;
+  final TextEditingController otroEspecifiqueController;
+
+  MultiSelectDialog({required this.equipos, required this.seleccionados, required this.otroEspecifiqueController});
+
+  @override
+  _MultiSelectDialogState createState() => _MultiSelectDialogState();
+}
+
+class _MultiSelectDialogState extends State<MultiSelectDialog> {
+  List<String> _tempSeleccionados = [];
+  bool _otroSeleccionado = false;
+
+  @override
+  void initState() {
+    _tempSeleccionados = widget.seleccionados;
+    _otroSeleccionado = _tempSeleccionados.contains('Otro');
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Seleccionar Equipos'),
+      content: SingleChildScrollView(
+        child: Column(
+          children: [
+            ListBody(
+              children: widget.equipos.map((equipo) {
+                return CheckboxListTile(
+                  value: _tempSeleccionados.contains(equipo),
+                  title: Text(equipo),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      if (value == true) {
+                        _tempSeleccionados.add(equipo);
+                        if (equipo == 'Otro') {
+                          _otroSeleccionado = true;
+                        }
+                      } else {
+                        _tempSeleccionados.remove(equipo);
+                        if (equipo == 'Otro') {
+                          _otroSeleccionado = false;
+                          widget.otroEspecifiqueController.clear();
+                        }
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            if (_otroSeleccionado)
+              TextField(
+                controller: widget.otroEspecifiqueController,
+                decoration: InputDecoration(
+                  hintText: 'Especifica el otro equipo',
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: Text('Cancelar'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        TextButton(
+          child: Text('Aceptar'),
+          onPressed: () {
+            Navigator.of(context).pop({'seleccionados': _tempSeleccionados, 'otroEspecifique': widget.otroEspecifiqueController.text});
+          },
+        ),
+      ],
     );
   }
 }
